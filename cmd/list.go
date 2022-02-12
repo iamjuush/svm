@@ -6,22 +6,36 @@ package cmd
 
 import (
 	"fmt"
-
 	"github.com/spf13/cobra"
+	"os"
+	"path/filepath"
 )
 
 // listCmd represents the list command
 var listCmd = &cobra.Command{
 	Use:   "list",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
+	Short: "Shows all existing spark versions",
+	Long: `Shows all existing spark versions. For example:
 
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
-	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("list called")
+Example:
+> svm list
+3.1.2
+2.2.2-with-hadoop-2.7.`,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		dirname, err := os.UserHomeDir()
+		if err != nil {
+			return err
+		}
+		svmFilepath := filepath.Join(dirname, ".svm")
+		fmt.Printf("Available spark versions:\n")
+		svmDir, err := os.ReadDir(svmFilepath)
+		if err != nil {
+			return err
+		}
+		for _, dir := range svmDir {
+			fmt.Println(dir.Name())
+		}
+		return nil
 	},
 }
 
