@@ -40,6 +40,13 @@ func parseSparkVersion(versionString string) version {
 	return version{sparkVersion: sparkVersion, fullVersion: fullVersion}
 }
 
+func ParseSparkFilename(name string) string {
+	name = strings.TrimSuffix(name, ".tgz")
+	name = strings.TrimPrefix(name, "spark-")
+	name = strings.Replace(name, "-bin", "", -1)
+	return name
+}
+
 func GetURLFromVersion(version string) string {
 	parsedVersion := parseSparkVersion(version)
 	return fmt.Sprintf("https://archive.apache.org/dist/spark/%s/%s.tgz", parsedVersion.sparkVersion, parsedVersion.fullVersion)
