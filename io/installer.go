@@ -17,8 +17,9 @@ import (
 )
 
 type Resource struct {
-	Filename string
-	Url      string
+	Home    string
+	Url     string
+	Version parsers.Version
 }
 
 func createProgressBar(fileSize int, progress *mpb.Progress) *mpb.Bar {
@@ -39,12 +40,11 @@ func createProgressBar(fileSize int, progress *mpb.Progress) *mpb.Bar {
 	return bar
 }
 
-func DownloadFile(resource Resource, version string) (err error) {
+func DownloadFile(resource Resource) (err error) {
 	// Create the file
-	dirname, err := os.UserHomeDir()
-	tempFilePath := filepath.Join(dirname, ".svm", resource.Filename+".tmp")
+	tempFilePath := filepath.Join(resource.Home, ".svm", resource.Version.SparkVersion+".tmp")
 	tempFile, err := os.Create(tempFilePath)
-	finalPath := filepath.Join(dirname, ".svm", version+".tgz")
+	tarPath := filepath.Join(resource.Home, ".svm", resource.Version.SparkVersion+".tgz")
 	if err != nil {
 		return err
 	}
@@ -91,7 +91,7 @@ func DownloadFile(resource Resource, version string) (err error) {
 	}
 
 	// Rename temp file to final file
-	err = os.Rename(tempFilePath, finalPath)
+	err = os.Rename(tempFilePath, tarPath)
 	if err != nil {
 		return err
 	}
@@ -100,12 +100,11 @@ func DownloadFile(resource Resource, version string) (err error) {
 	return nil
 }
 
-// Untar takes a destination path and a reader; a tar reader loops over the tarfile
+// UnzipTar takes a destination path and a reader; a tar reader loops over the tarfile
 // creating the file structure at 'dst' along the way, and writing any files
-func Untar(version string) error {
-	dirname, err := os.UserHomeDir()
-	svmPath := filepath.Join(dirname, ".svm")
-	tarPath := filepath.Join(dirname, ".svm", version+".tgz")
+func UnzipTar(resource Resource) error {
+	svmPath := filepath.Join(resource.Home, ".svm")
+	tarPath := filepath.Join(resource.Home, ".svm", resource.Version.SparkVersion+".tgz")
 	tarFile, err := os.Open(tarPath)
 	gzr, err := gzip.NewReader(tarFile)
 	if err != nil {
@@ -113,6 +112,7 @@ func Untar(version string) error {
 	}
 	defer func(gzr *gzip.Reader) {
 		err := gzr.Close()
+		err = os.Remove(tarPath)
 		if err != nil {
 
 		}
@@ -176,17 +176,13 @@ func Untar(version string) error {
 			}
 		}
 	}
+
 }
 
-func RenameUnzipped(version string) error {
-	dirname, err := os.UserHomeDir()
-	if err != nil {
-		return err
-	}
-	unzippedFileName := parsers.ParseSparkVersion(version)
-	sparkUnzippedPath := filepath.Join(dirname, ".svm", unzippedFileName.FullVersion)
-	sparkFinalPath := filepath.Join(dirname, ".svm", version)
-	err = os.Rename(sparkUnzippedPath, sparkFinalPath)
+func RenameUnzipped(resource Resource) error {
+	sparkUnzippedPath := filepath.Join(resource.Home, ".svm", resource.Version.FullVersion)
+	sparkFinalPath := filepath.Join(resource.Home, ".svm", resource.Version.SparkVersion)
+	err := os.Rename(sparkUnzippedPath, sparkFinalPath)
 	if err != nil {
 		return err
 	}

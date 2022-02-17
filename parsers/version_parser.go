@@ -11,7 +11,7 @@ type Version struct {
 	FullVersion  string
 }
 
-// Extract versioning info from the input string for svm install. Few cases to consider -
+// ParseSparkVersion Extract versioning info from the input string for svm install. Few cases to consider -
 // case 1: 3.2.0
 // case 2: 3.2.0-hadoop2.7
 // case 3: 3.2.0-without-hadoop
