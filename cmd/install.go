@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/spf13/cobra"
+	"os"
 	svmio "svm/io"
 	"svm/parsers"
 	"svm/web"
@@ -25,31 +26,27 @@ svm install 2.2.2-with-hadoop-2.7
 `,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if listAllInstallable {
-			err := web.GetAllInstallableVersions()
-			if err != nil {
-				return err
-			}
-			return nil
+			return web.GetAllInstallableVersions()
 		}
 		if err := validateArgs(args); err != nil {
 			return err
 		}
-		version := args[0]
-		url := parsers.GetURLFromVersion(version)
+		sparkVersion := args[0]
+		dirname, err := os.UserHomeDir()
+		if err != nil {
+			return err
+		}
+		version := parsers.ParseSparkVersion(sparkVersion)
+		url := parsers.GetURLFromVersion(sparkVersion)
 		fmt.Printf("Fetching from: %s \n", url)
-		resource := svmio.Resource{Filename: version + ".tgz", Url: url}
-		err := svmio.DownloadFile(resource, version)
-		if err != nil {
+		resource := svmio.Resource{Url: url, Version: version, Home: dirname}
+		if err := svmio.DownloadFile(resource); err != nil {
 			return err
 		}
-		err = svmio.Untar(version)
-		err = svmio.RenameUnzipped(version)
-		if err != nil {
+		if err = svmio.UnzipTar(resource); err != nil {
 			return err
 		}
-		//TODO: Rethink the file namings during initial file creation (tmp), after download (.tgz), and final (folder w/ name as version)
-		//TODO: Delete tar file
-		return nil
+		return svmio.RenameUnzipped(resource)
 	},
 }
 
