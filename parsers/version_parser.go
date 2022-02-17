@@ -6,9 +6,9 @@ import (
 	"strings"
 )
 
-type version struct {
-	sparkVersion string
-	fullVersion  string
+type Version struct {
+	SparkVersion string
+	FullVersion  string
 }
 
 // Extract versioning info from the input string for svm install. Few cases to consider -
@@ -16,7 +16,7 @@ type version struct {
 // case 2: 3.2.0-hadoop2.7
 // case 3: 3.2.0-without-hadoop
 // case 4: 2.4.0-without-hadoop-scala-2.12.tgz
-func parseSparkVersion(versionString string) version {
+func ParseSparkVersion(versionString string) Version {
 	var rCase1 = regexp.MustCompile(`^\d.\d.\d$`)
 	var rCase2 = regexp.MustCompile(`^\d.\d.\d-hadoop\d.\d$`)
 	var rCase3 = regexp.MustCompile(`^\d.\d.\d-without-hadoop$`)
@@ -37,10 +37,10 @@ func parseSparkVersion(versionString string) version {
 
 	sparkVersion := fmt.Sprintf("spark-%s", splitVersionString[0])
 
-	return version{sparkVersion: sparkVersion, fullVersion: fullVersion}
+	return Version{SparkVersion: sparkVersion, FullVersion: fullVersion}
 }
 
-func ParseSparkFilename(name string) string {
+func SparkToSVMFilename(name string) string {
 	name = strings.TrimSuffix(name, ".tgz")
 	name = strings.TrimPrefix(name, "spark-")
 	name = strings.Replace(name, "-bin", "", -1)
@@ -48,6 +48,6 @@ func ParseSparkFilename(name string) string {
 }
 
 func GetURLFromVersion(version string) string {
-	parsedVersion := parseSparkVersion(version)
-	return fmt.Sprintf("https://archive.apache.org/dist/spark/%s/%s.tgz", parsedVersion.sparkVersion, parsedVersion.fullVersion)
+	parsedVersion := ParseSparkVersion(version)
+	return fmt.Sprintf("https://archive.apache.org/dist/spark/%s/%s.tgz", parsedVersion.SparkVersion, parsedVersion.FullVersion)
 }
