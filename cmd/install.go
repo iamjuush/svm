@@ -7,11 +7,10 @@ package cmd
 import (
 	"errors"
 	"fmt"
-	"github.com/anaskhan96/soup"
 	"github.com/spf13/cobra"
-	"strings"
-	"svm/io"
+	svmio "svm/io"
 	"svm/parsers"
+	"svm/web"
 )
 
 var listAllInstallable bool
@@ -26,7 +25,7 @@ svm install 2.2.2-with-hadoop-2.7
 `,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if listAllInstallable {
-			err := getAllInstallableVersions()
+			err := web.GetAllInstallableVersions()
 			if err != nil {
 				return err
 			}
@@ -35,14 +34,21 @@ svm install 2.2.2-with-hadoop-2.7
 		if err := validateArgs(args); err != nil {
 			return err
 		}
-		VERSION := args[0]
-		url := parsers.GetURLFromVersion(VERSION)
+		version := args[0]
+		url := parsers.GetURLFromVersion(version)
 		fmt.Printf("Fetching from: %s \n", url)
-		resource := io.Resource{Filename: "spark.tgz", Url: url}
-		err := io.DownloadFile(resource)
+		resource := svmio.Resource{Filename: version + ".tgz", Url: url}
+		err := svmio.DownloadFile(resource, version)
 		if err != nil {
 			return err
 		}
+		err = svmio.Untar(version)
+		err = svmio.RenameUnzipped(version)
+		if err != nil {
+			return err
+		}
+		//TODO: Rethink the file namings during initial file creation (tmp), after download (.tgz), and final (folder w/ name as version)
+		//TODO: Delete tar file
 		return nil
 	},
 }
@@ -55,37 +61,6 @@ func validateArgs(args []string) error {
 		return errors.New("multiple versions not supported. Please only specify one version \n")
 	}
 	return nil
-}
-
-func getAllInstallableVersions() error {
-	const sparkURL = "https://archive.apache.org/dist/spark/"
-	fmt.Printf("Getting list of installable versions from %s\n", sparkURL)
-	response, err := soup.Get(sparkURL)
-	if err != nil {
-		return errors.New("cannot connect to https://archive.apache.org/dist/spark, check internet connection")
-	}
-	links := getSiteInfo(response)
-	for _, link := range links {
-		if strings.HasPrefix(link.Text(), "spark") {
-			subResponse, err := soup.Get(fmt.Sprintf("%s/%s", sparkURL, link.Text()))
-			if err != nil {
-				return errors.New("cannot connect to https://archive.apache.org/dist/spark, check internet connection")
-			}
-			subLinks := getSiteInfo(subResponse)
-			for _, subLink := range subLinks {
-				if strings.HasSuffix(subLink.Text(), ".tgz") {
-					println(parsers.ParseSparkFilename(subLink.Text()))
-				}
-			}
-		}
-	}
-	return nil
-}
-
-func getSiteInfo(resp string) []soup.Root {
-	mainSite := soup.HTMLParse(resp)
-	links := mainSite.FindAll("a")
-	return links
 }
 
 func init() {
