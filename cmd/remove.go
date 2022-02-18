@@ -5,6 +5,7 @@ Copyright © 2022 Joshua Leong <juushdev@gmail.com>
 package cmd
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/spf13/cobra"
@@ -13,16 +14,27 @@ import (
 // removeCmd represents the remove command
 var removeCmd = &cobra.Command{
 	Use:   "remove",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
+	Short: "Removes spark executable from svm directory",
+	Long: `Removes spark executable from svm directory. For example:
 
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
-	Run: func(cmd *cobra.Command, args []string) {
+svm remove 2.2.2-with-hadoop-2.7`,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := validateRemoveArgs(args); err != nil {
+			return err
+		}
 		fmt.Println("remove called")
+		return nil
 	},
+}
+
+func validateRemoveArgs(args []string) error {
+	if len(args) == 0 {
+		return errors.New("No version specified. Use `svm list` to view all installed versions \n")
+	}
+	if len(args) > 1 {
+		return errors.New("Multiple versions declared. Please only specify one version \n")
+	}
+	return nil
 }
 
 func init() {

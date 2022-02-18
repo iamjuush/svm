@@ -5,7 +5,9 @@ Copyright © 2022 Joshua Leong <juushdev@gmail.com>
 package cmd
 
 import (
-	"fmt"
+	"errors"
+	"os"
+	"path/filepath"
 
 	"github.com/spf13/cobra"
 )
@@ -13,16 +15,37 @@ import (
 // useCmd represents the use command
 var useCmd = &cobra.Command{
 	Use:   "use",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
+	Short: "Sets the desired spark version to use",
+	Long: `Sets the desired spark version to use. For example:
 
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
-	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("use called")
+svm use 2.2.2-with-hadoop-2.7
+`,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := validateUseArgs(args); err != nil {
+			return err
+		}
+		dirname, err := os.UserHomeDir()
+		if err != nil {
+			return err
+		}
+		sourceDir := filepath.Join(dirname, ".svm", args[0])
+		targetDir := filepath.Join(dirname, ".svm", "active")
+		_ = os.Remove(targetDir)
+		if err = os.Symlink(sourceDir, targetDir); err != nil {
+			return err
+		}
+		return nil
 	},
+}
+
+func validateUseArgs(args []string) error {
+	if len(args) == 0 {
+		return errors.New("No version specified. Use `svm list` to view all installed versions \n")
+	}
+	if len(args) > 1 {
+		return errors.New("Multiple versions declared. Please only specify one version \n")
+	}
+	return nil
 }
 
 func init() {
