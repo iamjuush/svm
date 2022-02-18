@@ -7,8 +7,9 @@ import (
 )
 
 type Version struct {
-	SparkVersion string
-	FullVersion  string
+	SparkVersion    string
+	FullVersion     string
+	DownloadVersion string
 }
 
 // ParseSparkVersion Extract versioning info from the input string for svm install. Few cases to consider -
@@ -23,21 +24,21 @@ func ParseSparkVersion(versionString string) Version {
 	var rCase4 = regexp.MustCompile(`^\d.\d.\d-without-hadoop-scala-\d.\d{1,2}`)
 
 	splitVersionString := strings.Split(versionString, "-")
-	var fullVersion string
+	var downloadVersion string
 	switch {
 	case rCase1.MatchString(versionString):
-		fullVersion = fmt.Sprintf("spark-%s", versionString)
+		downloadVersion = fmt.Sprintf("spark-%s", versionString)
 	case rCase2.MatchString(versionString):
-		fullVersion = fmt.Sprintf("spark-%s-bin-%s", splitVersionString[0], splitVersionString[1])
+		downloadVersion = fmt.Sprintf("spark-%s-bin-%s", splitVersionString[0], splitVersionString[1])
 	case rCase3.MatchString(versionString):
-		fullVersion = fmt.Sprintf("spark-%s-bin-%s", splitVersionString[0], strings.Join(splitVersionString[1:], "-"))
+		downloadVersion = fmt.Sprintf("spark-%s-bin-%s", splitVersionString[0], strings.Join(splitVersionString[1:], "-"))
 	case rCase4.MatchString(versionString):
-		fullVersion = fmt.Sprintf("spark-%s-bin-%s", splitVersionString[0], strings.Join(splitVersionString[1:], "-"))
+		downloadVersion = fmt.Sprintf("spark-%s-bin-%s", splitVersionString[0], strings.Join(splitVersionString[1:], "-"))
 	}
 
 	sparkVersion := fmt.Sprintf("spark-%s", splitVersionString[0])
 
-	return Version{SparkVersion: sparkVersion, FullVersion: fullVersion}
+	return Version{SparkVersion: sparkVersion, FullVersion: versionString, DownloadVersion: downloadVersion}
 }
 
 func SparkToSVMFilename(name string) string {
@@ -49,5 +50,5 @@ func SparkToSVMFilename(name string) string {
 
 func GetURLFromVersion(version string) string {
 	parsedVersion := ParseSparkVersion(version)
-	return fmt.Sprintf("https://archive.apache.org/dist/spark/%s/%s.tgz", parsedVersion.SparkVersion, parsedVersion.FullVersion)
+	return fmt.Sprintf("https://archive.apache.org/dist/spark/%s/%s.tgz", parsedVersion.SparkVersion, parsedVersion.DownloadVersion)
 }

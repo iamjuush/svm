@@ -42,16 +42,16 @@ func createProgressBar(fileSize int, progress *mpb.Progress) *mpb.Bar {
 
 func DownloadFile(resource Resource) (err error) {
 	// Create the file
-	tempFilePath := filepath.Join(resource.Home, ".svm", resource.Version.SparkVersion+".tmp")
+	tempFilePath := filepath.Join(resource.Home, ".svm", resource.Version.FullVersion+".tmp")
+	tarPath := filepath.Join(resource.Home, ".svm", resource.Version.FullVersion+".tgz")
+	_ = os.Remove(tempFilePath)
 	tempFile, err := os.Create(tempFilePath)
-	tarPath := filepath.Join(resource.Home, ".svm", resource.Version.SparkVersion+".tgz")
 	if err != nil {
 		return err
 	}
 	defer func() {
-		err := tempFile.Close()
-		if err != nil {
-			log.Fatal(err)
+		if closeErr := tempFile.Close(); closeErr != nil {
+			log.Fatal(closeErr)
 		}
 	}()
 
@@ -61,9 +61,8 @@ func DownloadFile(resource Resource) (err error) {
 		return err
 	}
 	defer func() {
-		err := resp.Body.Close()
-		if err != nil {
-			log.Fatal(err)
+		if closeErr := resp.Body.Close(); closeErr != nil {
+			log.Fatal(closeErr)
 		}
 	}()
 
@@ -78,21 +77,19 @@ func DownloadFile(resource Resource) (err error) {
 	bar := createProgressBar(fileSize, progress)
 	reader := bar.ProxyReader(resp.Body)
 	defer func() {
-		err := reader.Close()
-		if err != nil {
-			log.Fatal(err)
+		if closeErr := reader.Close(); closeErr != nil {
+			log.Fatal(closeErr)
 		}
 	}()
 
-	// Writer the body to temp file
+	// Write the body to temp file
 	_, err = io.Copy(tempFile, reader)
 	if err != nil {
 		return err
 	}
 
 	// Rename temp file to final file
-	err = os.Rename(tempFilePath, tarPath)
-	if err != nil {
+	if err = os.Rename(tempFilePath, tarPath); err != nil {
 		return err
 	}
 
@@ -104,34 +101,35 @@ func DownloadFile(resource Resource) (err error) {
 // creating the file structure at 'dst' along the way, and writing any files
 func UnzipTar(resource Resource) error {
 	svmPath := filepath.Join(resource.Home, ".svm")
-	tarPath := filepath.Join(resource.Home, ".svm", resource.Version.SparkVersion+".tgz")
+	tarPath := filepath.Join(resource.Home, ".svm", resource.Version.FullVersion+".tgz")
 	tarFile, err := os.Open(tarPath)
 	gzr, err := gzip.NewReader(tarFile)
 	if err != nil {
 		return err
 	}
 	defer func(gzr *gzip.Reader) {
-		err := gzr.Close()
-		err = os.Remove(tarPath)
-		if err != nil {
-
+		if closeErr := gzr.Close(); closeErr != nil {
+			log.Fatal(closeErr)
+		}
+		if removeErr := os.Remove(tarPath); removeErr != nil {
+			log.Fatal(removeErr)
 		}
 	}(gzr)
 
 	tr := tar.NewReader(gzr)
 
 	for {
-		header, err := tr.Next()
+		header, getNextErr := tr.Next()
 
 		switch {
 
 		// if no more files are found return
-		case err == io.EOF:
+		case getNextErr == io.EOF:
 			return nil
 
 		// return any other error
-		case err != nil:
-			return err
+		case getNextErr != nil:
+			return getNextErr
 
 		// if the header is nil, just skip it (not sure how this happens)
 		case header == nil:
@@ -141,50 +139,49 @@ func UnzipTar(resource Resource) error {
 		// the target location where the dir/file should be created
 		target := filepath.Join(svmPath, header.Name)
 
-		// the following switch could also be done using fi.Mode(), not sure if there
-		// a benefit of using one vs. the other.
+		// the following switch could also be done using fi.Mode()
+		// Not sure if there is a benefit of using one or the other.
 		// fi := header.FileInfo()
 
 		// check the file type
 		switch header.Typeflag {
 
-		// if its a dir and it doesn't exist create it
+		// if dir and it doesn't exist create it
 		case tar.TypeDir:
-			if _, err := os.Stat(target); err != nil {
-				if err := os.MkdirAll(target, 0755); err != nil {
-					return err
+			if _, typeDirErr := os.Stat(target); typeDirErr != nil {
+				if mkDirErr := os.MkdirAll(target, 0755); mkDirErr != nil {
+					return mkDirErr
 				}
 			}
 
 		// if it's a file create it
 		case tar.TypeReg:
-			f, err := os.OpenFile(target, os.O_CREATE|os.O_RDWR, os.FileMode(header.Mode))
-			if err != nil {
-				return err
+			f, openFileErr := os.OpenFile(target, os.O_CREATE|os.O_RDWR, os.FileMode(header.Mode))
+			if openFileErr != nil {
+				return openFileErr
 			}
 
 			// copy over contents
-			if _, err := io.Copy(f, tr); err != nil {
-				return err
+			if _, copyErr := io.Copy(f, tr); copyErr != nil {
+				return copyErr
 			}
 
-			// manually close here after each file operation; defering would cause each file close
+			// manually close here after each file operation; deferring would cause each file close
 			// to wait until all operations have completed.
-			err = f.Close()
-			if err != nil {
+			if err = f.Close(); err != nil {
 				return err
 			}
 		}
 	}
-
 }
 
 func RenameUnzipped(resource Resource) error {
-	sparkUnzippedPath := filepath.Join(resource.Home, ".svm", resource.Version.FullVersion)
-	sparkFinalPath := filepath.Join(resource.Home, ".svm", resource.Version.SparkVersion)
+	sparkUnzippedPath := filepath.Join(resource.Home, ".svm", resource.Version.DownloadVersion)
+	sparkFinalPath := filepath.Join(resource.Home, ".svm", resource.Version.FullVersion)
 	err := os.Rename(sparkUnzippedPath, sparkFinalPath)
 	if err != nil {
 		return err
 	}
+	fmt.Printf("Installed %s successfully\n", resource.Version.FullVersion)
 	return nil
 }

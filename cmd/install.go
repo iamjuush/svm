@@ -28,7 +28,7 @@ svm install 2.2.2-with-hadoop-2.7
 		if listAllInstallable {
 			return web.GetAllInstallableVersions()
 		}
-		if err := validateArgs(args); err != nil {
+		if err := validateInstallArgs(args); err != nil {
 			return err
 		}
 		sparkVersion := args[0]
@@ -50,9 +50,9 @@ svm install 2.2.2-with-hadoop-2.7
 	},
 }
 
-func validateArgs(args []string) error {
+func validateInstallArgs(args []string) error {
 	if len(args) == 0 {
-		return errors.New("no version specified. Use `svm list` to view available versions \n")
+		return errors.New("no version specified. Use `svm install --list` to view all downloadable versions \n")
 	}
 	if len(args) > 1 {
 		return errors.New("multiple versions not supported. Please only specify one version \n")
