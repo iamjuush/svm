@@ -13,8 +13,8 @@ var (
 	// Used for flags.
 	rootCmd = &cobra.Command{
 		Use:   "svm",
-		Short: "Yet another version manager to manage Apache Spark installations.",
-		Long:  `Yet another version manager to manage Apache Spark installations.`,
+		Short: "Yet another version manager, written in Go, to manage Apache Spark installations.",
+		Long:  `Yet another version manager, written in Go, to manage Apache Spark installations.`,
 		// Run:   func(cmd *cobra.Command, args []string) {},
 	}
 )
