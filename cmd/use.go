@@ -6,6 +6,7 @@ package cmd
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -34,6 +35,7 @@ svm use 2.2.2-with-hadoop-2.7
 		if err = os.Symlink(sourceDir, targetDir); err != nil {
 			return err
 		}
+		fmt.Printf("Active Spark version: %s \n", args[0])
 		return nil
 	},
 }
