@@ -33,7 +33,7 @@ Example:
 			return err
 		}
 		for _, dir := range svmDir {
-			if dir.Name() == "bin" {
+			if dir.Name() == "active" {
 				continue
 			}
 			fmt.Println(dir.Name())
