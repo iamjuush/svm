@@ -185,3 +185,18 @@ func RenameUnzipped(resource Resource) error {
 	fmt.Printf("Installed %s successfully\n", resource.Version.FullVersion)
 	return nil
 }
+
+func CreateSVMDirectory(dirname string) error {
+	svmPath := filepath.Join(dirname, ".svm")
+	_, err := os.Stat(svmPath)
+	if os.IsNotExist(err) {
+		if _, createFolderErr := os.Create(svmPath); createFolderErr != nil {
+			return createFolderErr
+		}
+	}
+	return nil
+}
+
+//func CheckIfExists(dirname string) (bool, error) {
+//
+//}

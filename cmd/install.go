@@ -33,7 +33,7 @@ svm install 2.2.2-with-hadoop-2.7
 		}
 		sparkVersion := args[0]
 		dirname, err := os.UserHomeDir()
-		if err != nil {
+		if err := svmio.CreateSVMDirectory(dirname); err != nil {
 			return err
 		}
 		version := parsers.ParseSparkVersion(sparkVersion)
