@@ -9,6 +9,7 @@ import (
 	"github.com/spf13/cobra"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 // listCmd represents the list command
@@ -32,14 +33,26 @@ Example:
 		if err != nil {
 			return err
 		}
+		activeVersion, err := getActiveSparkVersion(svmFilepath)
 		for _, dir := range svmDir {
-			if dir.Name() == "active" {
-				continue
+			dirName := dir.Name()
+			switch {
+			case dirName == activeVersion:
+				fmt.Printf("[*] %s \n", dirName)
+			case dirName != "active":
+				fmt.Printf("[ ] %s \n", dirName)
 			}
-			fmt.Println(dir.Name())
 		}
 		return nil
 	},
+}
+
+func getActiveSparkVersion(svmFilepath string) (string, error) {
+	readlink, err := os.Readlink(filepath.Join(svmFilepath, "active"))
+	if err != nil {
+		return "cannot read active spark version", err
+	}
+	return readlink[strings.LastIndex(readlink, "/")+1:], nil
 }
 
 func init() {
